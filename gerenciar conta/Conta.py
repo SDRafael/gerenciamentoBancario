@@ -101,7 +101,9 @@ class Sistema:
 
     def consultaConta(self, nConta):
         return self.contas.get(nConta, None)
-        
+#
+#Os objetos abaixo poderão enfrentar conflito pois não estão adequados à integração com Mysql
+#
 gerente = Sistema()
 
 gerente.cadastrar("Maria do Ibura", "000.000.000-01", "001", "2024-02-01", "corrente" )
