@@ -1,3 +1,4 @@
+import mysql.connector;
 from datetime import datetime;
 
 class Conta:
@@ -49,20 +50,54 @@ class Conta:
 
 class Sistema:
     def __init__(self):
-        #self.listaContas = []
-        self.contas = {
+        self.conection = mysql.connector.connect(
+            host = "localhost",
+            user = "user"
+            password = "password"
+            database = "nome do banco"
 
-        }    
+        )
+        self.cursor = self.conection.cursor()
+        self.createTable()
+    def createTable(self):
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Contas(
+                id INT AUTO_INCREMENT PRIMARY_KEY,
+                Nome VARCHAR(100),
+                CPF VARCHAR(15),
+                Conta VARCHAR(30),
+                Abertura VARCHAR(8),
+                Tipo VARCHAR(1),
+                Saldo FLOAT 
+
+            )
+
+            """)
+        self.conection.commit()
 
     def cadastrar(self, nome, cpf, nConta, dataAbertura, tipo):
         cadastro = Conta(nome, cpf, nConta, dataAbertura, tipo)
         
-        if nConta in self.contas:
+        self.cursor.execute("SELECT FROM Contas WHERE nConta = %s", (nConta,))
+        if self.cursor.fetchone(): #verifica se o numero da conta passado para o método cadastrar já existe
+            print(f"Número de conta {nConta} já existe")
+        else:
+            self.cursor.execute("""
+                INSERT INTO Contas (Nome, CPF, Conta, Abertura, Tipo, Saldo)
+                VALUES (%s, %s, %s, %s, %s, %s)
+
+
+                """, (nome, cpf,nConta, dataAbertura, tipo, cadastro.saldo))
+            self.conection.commit()
+            print("Cadastro efetuado com sucesso!")
+
+
+        """if nConta in self.contas:
             print(f"A conta de número {nCOnta} já existe. Operação NEGADA!")
 
         else:
             self.contas[nConta] = cadastro
-            print(f"Cadastro efetuado para conta de número {nConta}!")
+            print(f"Cadastro efetuado para conta de número {nConta}!")"""
 
     def consultaConta(self, nConta):
         return self.contas.get(nConta, None)
@@ -80,9 +115,7 @@ consultaGerente = gerente.consultaConta("001")
 
 else:
     print("Conta inexistente")"""
-#
-# ABAIXO UM PEQUENO TESTE
-#
+
 print(consultaGerente.getSaldo())
 consultaGerente.depositar(500)
 print(f"pós deposito {consultaGerente.getSaldo()}")
