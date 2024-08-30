@@ -1,5 +1,5 @@
 import mysql.connector;
-from datetime import datetime;
+from datetime import datetime, date;
 
 class Conta:
     def __init__(self, nome, cpf, nConta, dataAbertura, tipo):
@@ -50,35 +50,32 @@ class Conta:
 
 class Sistema:
     def __init__(self):
-        self.conection = mysql.connector.connect(
+        self.connection = mysql.connector.connect(
             host = "localhost",
-            user = "user"
-            password = "password"
-            database = "nome do banco"
+            user = "user",
+            password = "***",
+            database = "db_name"
 
         )
-        self.cursor = self.conection.cursor()
+        self.cursor = self.connection.cursor()
         self.createTable()
     def createTable(self):
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS Contas(
-                id INT AUTO_INCREMENT PRIMARY_KEY,
+                id INT AUTO_INCREMENT PRIMARY KEY,
                 Nome VARCHAR(100),
-                CPF VARCHAR(15),
+                CPF VARCHAR(20),
                 Conta VARCHAR(30),
-                Abertura VARCHAR(8),
-                Tipo VARCHAR(1),
-                Saldo FLOAT 
-
-            )
-
+                Abertura DATE,
+                Tipo VARCHAR(10),
+                Saldo FLOAT)
             """)
-        self.conection.commit()
+        self.connection.commit()
 
     def cadastrar(self, nome, cpf, nConta, dataAbertura, tipo):
         cadastro = Conta(nome, cpf, nConta, dataAbertura, tipo)
         
-        self.cursor.execute("SELECT FROM Contas WHERE nConta = %s", (nConta,))
+        self.cursor.execute("SELECT * FROM Contas WHERE Conta = %s", (nConta,))
         if self.cursor.fetchone(): #verifica se o numero da conta passado para o método cadastrar já existe
             print(f"Número de conta {nConta} já existe")
         else:
@@ -88,38 +85,44 @@ class Sistema:
 
 
                 """, (nome, cpf,nConta, dataAbertura, tipo, cadastro.saldo))
-            self.conection.commit()
+            self.connection.commit()
             print("Cadastro efetuado com sucesso!")
 
 
-        """if nConta in self.contas:
-            print(f"A conta de número {nCOnta} já existe. Operação NEGADA!")
-
-        else:
-            self.contas[nConta] = cadastro
-            print(f"Cadastro efetuado para conta de número {nConta}!")"""
+        
 
     def consultaConta(self, nConta):
-        return self.contas.get(nConta, None)
-#
-#Os objetos abaixo poderão enfrentar conflito pois não estão adequados à integração com Mysql
-#
+        self.cursor.execute("SELECT * FROM Contas WHERE Conta = %s", (nConta,))
+
+        contaCOnsulta = self.cursor.fetchone()
+        if contaCOnsulta:
+            nome, cpf, nConta, dataAbertura, tipo, saldo = contaCOnsulta[1:]
+            conta = Conta(nome, cpf, nConta, dataAbertura, tipo)
+            conta.saldo = saldo
+            return conta
+        else: 
+            print("A conta não existe")
+            return None
+        
+    def closeConnection(self):
+        self.cursor.close()
+        self.connection.close()
+        
+        
 gerente = Sistema()
 
-gerente.cadastrar("Maria do Ibura", "000.000.000-01", "001", "2024-02-01", "corrente" )
-gerente.cadastrar("Tõe de Irineu do Peixe", "100.001.000-02", "002", "2024-04-02", "poupança")
-gerente.cadastrar("Jessé da Ambulância", "098.000.020-20", "003", "2024-08-06", "corrente")
+gerente.cadastrar("Maria do Ibura", "000.000.000-01", "001", date(2024, 2, 1), "corrente" )
+gerente.cadastrar("Tõe de Irineu do Peixe", "100.001.000-02", "002", date(2024, 4, 2), "poupança")
+gerente.cadastrar("Jessé da Ambulância", "098.000.020-20", "003", date(2024, 8, 6), "corrente")
 
 
 consultaGerente = gerente.consultaConta("001")
-"""if consultaGerente:
+if consultaGerente:
     consultaGerente.detalhes()
+    print(consultaGerente.getSaldo())
+    consultaGerente.depositar(500)
+    print(f"pós deposito {consultaGerente.getSaldo()}")
+    consultaGerente.sacar(300)
+    consultaGerente.verExtrato()
 
-else:
-    print("Conta inexistente")"""
-
-print(consultaGerente.getSaldo())
-consultaGerente.depositar(500)
-print(f"pós deposito {consultaGerente.getSaldo()}")
-consultaGerente.sacar(300)
-consultaGerente.verExtrato()
+gerente.closeConnection()
